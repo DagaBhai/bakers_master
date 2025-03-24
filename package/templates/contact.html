@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Contact</title>
+    <style>
+        html {
+            -webkit-text-size-adjust: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        body {
+            background-color: #fcfbf0;
+            background-image: url('{{ url_for("static", filename="images/baking-background.png") }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #fcfbf0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            font-size: 1.9rem;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .navbar-links {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-links li {
+            margin: 0 15px;
+        }
+
+        .navbar-links a {
+            text-decoration: none;
+            color: #fb7513;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-links a h1 {
+            font-size: 1.2em;
+            font-weight: bolder;
+            margin: 0;
+            padding: 5px 10px;
+        }
+
+        .navbar-logo img {
+            height: 15vh;
+            max-height: 100px;
+        }
+
+        main {
+            margin-top: 120px; /* Increased to account for fixed navbar */
+            padding: 20px;
+            text-align: left;
+            flex: 1;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 15px 0 10px;
+        }
+
+        p {
+            font-size: 1rem;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 10px 0;
+        }
+
+        li {
+            font-size: 1rem;
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+
+        .contact-item::before {
+            content: "◆";
+            color: #87CEEB;
+            margin-right: 10px;
+        }
+
+        @media (min-width: 600px) {
+            .navbar-container {
+                justify-content: space-between;
+            }
+
+            .navbar-links a h1 {
+                font-size: 1.2em;
+            }
+
+            main {
+                margin-top: 140px;
+                padding: 30px;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            p, li {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+                font-size: 0.9em;
+            }
+
+            .navbar-links {
+                flex-direction: row;
+                padding: 0;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 0.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            main {
+                margin-top: 100px;
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 1.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            main {
+                margin-top: 90px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/LOGO.png') }}" alt="Logo">
+                </a>
+            </div>
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('home') }}"><h1>HOME</h1></a></li>
+                <li><a href="{{ url_for('about') }}"><h1>ABOUT</h1></a></li>
+                <li><a href="{{ url_for('contact') }}"><h1>CONTACT</h1></a></li>
+            </ul>
+        </div>
+    </div>
+    <main>
+        <h1>Contact</h1>
+        <h2>Get in Touch with Us!</h2>
+        <p>Got a question, suggestion, or need a little baking advice? We’d love to hear from you!</p>
+        <ul>
+            <li class="contact-item">Email: support@xyz.com</li>
+            <li class="contact-item">Phone:</li>
+        </ul>
+
+        <h2>Let’s Connect!</h2>
+        <p>Follow us on social media for baking tips, new features, and more:</p>
+        <ul>
+            <li class="contact-item">Instagram:</li>
+            <li class="contact-item">Facebook:</li>
+            <li class="contact-item">Twitter:</li>
+        </ul>
+
+        <h2>Feedback Matters!</h2>
+        <p>Help us improve! If you have ideas or features you’d like to see, drop us a message — we’re always working on making your baking journey easier and more precise.</p>
+
+        <h2>Happy Baking!</h2>
+    </main>
+</body>
+</html>

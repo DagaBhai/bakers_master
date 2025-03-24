@@ -1,0 +1,2 @@
+app_config= '6157ea429d974b2766f17ad4f85c98bf'
+apikey="AIzaSyD-khfPGUiyGOytU0xAcf9IlmzrI7BtH0Q"

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OUTPUT</title>
+    <style>
+        html {
+            -webkit-text-size-adjust: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body {
+            background-color: #fcfbf0;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            background-image: url("{{ url_for('static', filename='images/output_background.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+
+        .navbar-container {
+            display: flex;
+            font-size: 1.9rem;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .navbar-links {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-links li {
+            margin: 0 15px;
+        }
+
+        .navbar-links a {
+            text-decoration: none;
+            color: #fb7513;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-links a h1 {
+            font-size: 1.2em;
+            font-weight: bolder;
+            margin: 0;
+            padding: 5px 10px;
+        }
+
+        .navbar-logo img {
+            height: 15vh;
+            max-height: 100px;
+        }
+
+        main {
+            margin-top: 60px;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: calc(100vh - 60px);
+            text-align: center;
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #left, #right {
+            width: 100%;
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+        }
+
+        #left {
+            flex-direction: column;
+            gap: 5px;
+            min-height: 0; /* Prevent overflow issues */
+        }
+
+        #heading {
+            /* height: 200px; */
+            width: 400px;
+            background-image: url("heading1.jpeg");
+            mix-blend-mode: multiply;
+            background-size: cover;
+        }
+
+        #container {
+            max-height: 55vh;
+            width: 550px;
+            border: 2px solid orange;
+            border-radius: 10%;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        #container::-webkit-scrollbar {
+            width: 0; /* Hide scrollbar */
+            background: transparent;
+        }
+
+        #title {
+            margin-bottom: -20px;
+            width: 80%;
+            height: 25%;
+        }
+
+        .output-box {
+            max-width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .output-box::-webkit-scrollbar {
+            width: 0; /* Hide scrollbar */
+            background: transparent;
+        }
+
+        .output {
+            font-size: 20px;
+            text-align: left;
+        }
+
+        .output ol {
+            padding-left: 20px;
+            margin: 0;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        #generate-another-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #fb7513;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #generate-another-btn:hover {
+            background-color: #ff9800;
+        }
+
+        @media (min-width: 600px) {
+            main {
+                flex-direction: row;
+            }
+
+            #left, #right {
+                width: 50%;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #container {
+                width: 550px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+                font-size: 0.9em;
+                position: relative;
+                z-index: 3;
+            }
+
+            .navbar-links {
+                flex-direction: row;
+                padding: 0;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 0.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            #left {
+                justify-content: center;
+                align-items: center;
+            }
+
+            #container {
+                width: 90%;
+                max-height: 40vh;
+            }
+
+            #heading {
+                width: 300px;
+                /* height: 150px; */
+            }
+
+            body {
+                background-image: url("{{ url_for('static', filename='images/PHONE_OUTPUT_BACKGROUND_PRECISION_BAKING.png') }}");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-attachment: scroll;
+                background-position: center;
+                background-color: #fcfbf0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 1.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            #container {
+                width: 100%;
+                max-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/LOGO.png') }}" alt="Logo">
+                </a>
+            </div>
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('home') }}"><h1>HOME</h1></a></li>
+                <li><a href="{{ url_for('about') }}"><h1>ABOUT</h1></a></li>
+                <li><a href="{{ url_for('contact') }}"><h1>CONTACT</h1></a></li>
+            </ul>
+        </div>
+    </div>
+    <main>
+        <div id="left">
+            <div id="heading"></div>
+            <div id="container">
+                <div id="title">
+                    <h2>Time To Bake</h2>
+                </div>
+                {% if recipe_output %}
+                    <h2 style="text-align: center; color: #fb7513; margin-bottom: 15px;">
+                        Recipe For {{ recipe_output.name }}
+                    </h2>
+                    <div class="output-box">
+                        <div class="output">
+                            {{ recipe_output.description | safe }}
+                        </div>
+                    </div>
+                {% else %}
+                    <p style="text-align: center; color: red;">No recipe found.</p>
+                {% endif %}
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <form action="{{ url_for('regenerate_recipe_v2') }}" method="GET">
+                    <button type="submit" id="generate-another-btn">
+                        🔄 Regenerate Recipe
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div id="right"></div>
+    </main>
+</body>
+</html>

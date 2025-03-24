@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOME PAGE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #fcfbf0;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #header {
+            display: flex;
+            width: 100%;
+            height: 50vh;
+            background-image: url("{{ url_for('static',filename='images/HOME_BANNER.png') }}");
+            background-position: left; /* Default for larger screens */
+            background-size: cover;
+            align-items: center;
+            justify-content: center;
+        }
+        #logo {
+            height: 160px;
+            width: 188px;
+            mix-blend-mode: multiply;
+            background-image: url("{{ url_for('static', filename='images/LOGO.png') }}");
+            background-size: cover;
+        }
+        #main {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #upperdiv, #lowerdiv {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #left, #middle, #right {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            height: auto;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .heading {
+            height: 220px;
+            width: 100%;
+            max-width: 380px;
+        }
+        #heading-upperleft {
+            background-image: url("{{ url_for('static', filename='images/PRECISION_BAKING.png') }}");
+            background-size: cover;
+        }
+        #heading-upperright {
+            background-image: url("{{ url_for('static', filename='images/RECIPE_MASTER.png') }}");
+            background-size: cover;
+        }
+        #heading3 {
+            background-image: url("{{ url_for('static', filename='images/TREAT_TECH.png') }}");
+            background-size: cover;
+        }
+        .forms {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+            width: 100%;
+            max-width: 320px;
+        }
+        .button {
+            height: 50px;
+            width: 100%;
+            max-width: 300px;
+            border-radius: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #24356e;
+            color: white;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+        }
+        button:active {
+            font-size: 10px;
+            height: 30px;
+        }
+
+        /* Media Queries for Responsive Design */
+        @media (min-width: 600px) {
+            #left, #middle, #right {
+                width: 50%;
+            }
+        }
+
+        @media (min-width: 900px) {
+            #left, #middle, #right {
+                width: 33.33%;
+            }
+        }
+
+        @media (max-width: 599px) {
+            #header {
+                height: 40vh;
+                background-position: center; /* Center the background image for mobile */
+            }
+            #logo {
+                height: 120px;
+                width: 140px;
+            }
+            .heading {
+                height: 170px;
+            }
+            .button h3 {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div id="logo"></div>
+    </div>
+    <div id="main">
+        <div id="upperdiv">
+            <div id="left">
+                <div class="container">
+                    <div class="heading" id="heading-upperleft"></div>
+                    <form class="forms" action="{{url_for('Precision_baking')}}">
+                        <button class="button"><h3>GET PRECISE GRAMS FOR THE RECIPE</h3></button>
+                    </form>
+                </div>
+            </div>
+            <div id="middle">
+                <div class="container">
+                    <div class="heading" id="heading-upperright"></div>
+                    <form class="forms" action="{{url_for('recipe_master')}}">
+                        <button class="button"><h3>GENERATE RECIPE FROM INGREDIENTS</h3></button>
+                    </form>
+                </div>
+            </div>
+            <div id="right">
+                <div class="container">
+                    <div class="heading" id="heading3"></div>
+                    <form class="forms" action="{{url_for('treat_tech')}}">
+                        <button class="button" id="button-lower"><h3>EXPLORE OTHER RECIPES</h3></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

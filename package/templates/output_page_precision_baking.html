@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OUTPUT</title>
+    <style>
+        html {
+            -webkit-text-size-adjust: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body {
+            background-color: #fcfbf0;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            background-image: url("{{ url_for('static', filename='images/output_background.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+
+        .navbar-container {
+            display: flex;
+            font-size: 1.9rem;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .navbar-links {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-links li {
+            margin: 0 15px;
+        }
+
+        .navbar-links a {
+            text-decoration: none;
+            color: #fb7513;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-links a h1 {
+            font-size: 1.2em;
+            font-weight: bolder;
+            margin: 0;
+            padding: 5px 10px;
+        }
+
+        .navbar-logo img {
+            height: 15vh;
+            max-height: 100px;
+        }
+
+        .logo img {
+            width: 80%;
+            max-width: 800px;
+            margin-left: 10%;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: calc(100vh - 60px);
+            text-align: center;
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #left, #right {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #left {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #heading {
+            height: 150px;
+            width: 100%;
+            max-width: 600px;
+            background-image: url("https://via.placeholder.com/600x150");
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #fb7513;
+            border-radius: 10px;
+        }
+
+        #container {
+            height: 40vh;
+            width: 90%;
+            max-width: 550px;
+            border: 2px solid orange;
+            border-radius: 5%;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            padding: 0;
+            min-height: 200px;
+            max-height: 40vh;
+            scrollbar-width: none; /* Hide scrollbar in Firefox */
+            -ms-overflow-style: none; /* Hide scrollbar in Edge/IE */
+        }
+
+        #container::-webkit-scrollbar {
+            display: none; /* Hide scrollbar in Webkit browsers */
+        }
+
+        #title {
+            margin-bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            color: #fb7513;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            padding: 1px 15px;
+            box-sizing: border-box;
+        }
+
+        .output {
+            width: 100%;
+            font-size: 20px;
+            text-align: left;
+            padding: 0px 20px 10px 70px;
+            flex-grow: 0;
+            box-sizing: border-box; /* Ensure padding doesn't expand beyond width */
+            max-height: calc(100% - 60px); /* Limit height to fit within container minus title */
+            overflow-y: auto; /* Allow scrolling for lengthy content */
+            overflow-wrap: break-word; /* Break long words */
+            scrollbar-width: none; /* Hide scrollbar in Firefox */
+            -ms-overflow-style: none; /* Hide scrollbar in Edge/IE */
+        }
+
+        .output::-webkit-scrollbar {
+            display: none; /* Hide scrollbar in Webkit browsers */
+        }
+
+        .output ol {
+            padding-left: 20px;
+            margin: 0;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        .output li {
+            margin-bottom: 5px;
+        }
+
+        @media (min-width: 1024px) {
+            #container {
+                margin-top: 0;
+            }
+        }
+
+        @media (min-width: 600px) {
+            #navbar-items a {
+                font-size: 24px;
+            }
+
+            #logo {
+                width: 180px;
+                height: 120px;
+            }
+
+            main {
+                flex-direction: row;
+            }
+
+            #left, #right {
+                width: 50%;
+            }
+
+            #heading {
+                height: 200px;
+                max-width: 800px;
+            }
+
+            #container {
+                width: 550px;
+            }
+
+            .output {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+                font-size: 0.9em;
+                position: relative;
+                z-index: 3;
+            }
+
+            .navbar-links {
+                flex-direction: row;
+                padding: 0;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 0.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            #left {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #container {
+                min-height: 150px;
+                height: 30vh;
+                border-radius: 5%;
+                max-height: 30vh;
+            }
+
+            #title {
+                font-size: 18px;
+                padding: 1px 15px;
+            }
+
+            .output {
+                font-size: 18px;
+                padding: 0px 20px 10px 50px;
+            }
+
+            body {
+                background-image: url("{{ url_for('static', filename='images/PHONE_OUTPUT_BACKGROUND_PRECISION_BAKING.png') }}");
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-attachment: scroll;
+                background-position: center;
+                background-color: #fcfbf0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            main{
+                justify-content: flex-start;
+                margin-top:5vh;
+            }
+            .navbar-container {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size: 1.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            #container {
+                width: 100%;
+                max-width: 100%;
+                padding: 0;
+                min-height: 120px;
+                height: 40vh;
+                border-radius: 5%;
+                max-height: 40vh;
+            }
+
+            #title {
+                font-size: 16px;
+                padding: 1px 15px;
+            }
+
+            .output {
+                font-size: 16px;
+                padding: 0px 20px 10px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/LOGO.png') }}" alt="Logo">
+                </a>
+            </div>
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('home') }}"><h1>HOME</h1></a></li>
+                <li><a href="{{ url_for('about') }}"><h1>ABOUT</h1></a></li>
+                <li><a href="{{ url_for('contact') }}"><h1>CONTACT</h1></a></li>
+            </ul>
+        </div>
+    </div>
+    <main>
+        <div id="left">
+            <div id="container">
+                <div id="title">
+                    <h2>PRECISE INGREDIENTS<br>(in grams)</h2>
+                </div>
+                <div class="output">
+                    <ol>
+                        {% if ingredient_output %}
+                            {% for ingredient in ingredient_output %}
+                                <li>{{ ingredient }}</li>
+                            {% endfor %}
+                        {% else %}
+                            <p>No ingredients found or incorrect data</p>
+                        {% endif %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <div id="right"></div>
+    </main>
+</body>
+</html>

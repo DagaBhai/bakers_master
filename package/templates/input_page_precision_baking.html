@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+           
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            background-image: url("{{ url_for('static', filename='images/BACKGROUND_PRECISION_BAKING.png') }}");
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment:fixed;
+        }
+
+        .navbar-container {
+            display: flex;
+            font-size: 1.9rem;
+            justify-content: space-between;
+            align-items: center;
+            /* max-width: 1200px; */
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .navbar-links {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-links li {
+            margin: 0 15px;
+        }
+
+        .navbar-links a {
+            text-decoration: none;
+            color: #fb7513;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-links a h1 {
+            font-size: 1.2em;
+            font-weight: bolder;
+            margin: 0;
+            padding: 5px 10px;
+        }
+
+        .navbar-logo img {
+            height: 15vh;
+            max-height: 100px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .left {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+            width: 60%;
+        }
+
+        .right {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            width: 40vw;
+            margin-top: -42px;
+        }
+
+        .logo img {
+            width: 80%;
+            max-width: 800px;
+            margin-left: 10%;
+        }
+
+        .recipe-form {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-container {
+            margin-bottom: 15px;
+        }
+
+        .inputarea {
+            width: 100%;
+            /* max-width: 800px; */
+            height: 35vh;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 1rem;
+            resize: none;
+            min-height: 150px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .submit-button {
+            background-color: #fb7513;
+            width: 80%;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 1.5rem;
+            cursor: pointer;
+            font-size: 21px;
+            font-weight:bolder;
+            transition: background-color 0.3s ease;
+        }
+
+        .carousel-container {
+            margin-top:40px;
+            width: 95%;
+            border-radius: 5px;
+            /* max-width: 800px; */
+            /* height: 60vh; */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .carousel {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel img {
+            width: 100%;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+
+        .prev-button, .next-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .prev-button {
+            left: 10px;
+            display: none;
+        }
+
+        .next-button {
+            right: 10px;
+            display: none;
+        }
+
+        .dots {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dots span {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: #fff2f2;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .dots span.active {
+            background-color: #9b9b9b;
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .navbar-container{
+                justify-content: center;
+                flex-wrap:wrap;
+                font-size:0.9em;
+                position:relative;
+                z-index:3;
+            }
+            .left{
+                position: absolute;
+                display:hidden;
+                margin-top: 0;
+            }
+            .right{
+                width: 100vw;
+
+            }
+            .carousel-container {
+                display: none;
+                position:absolute;
+                z-index:-5;
+            }
+
+            .inputarea {
+                height: 25vh;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size:0.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            body{
+                background-image: url("{{ url_for('static', filename='images/PHONE_BACKGROUND_PRECISION_BAKING.png') }}");
+                background-size: cover;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                flex-direction: column;
+            }
+            .navbar-container{
+                justify-content: center;
+                flex-wrap:wrap;
+            }
+            .left{
+                position: absolute;
+                display:hidden;
+                margin-top: 0;
+            }
+            .right{
+                width: 100vw;
+
+            }
+            .carousel-container {
+                display: none;
+                position:absolute;
+                z-index:-5;
+            }
+
+            .inputarea {
+                height: 25vh;
+            }
+
+            .navbar-links li {
+                margin: 0 10px;
+            }
+
+            .navbar-links a h1 {
+                font-size:1.5em;
+            }
+
+            .navbar-logo img {
+                height: 10vh;
+            }
+
+            #overlay {
+                display: none;
+            }
+            body{
+                background-image: url("{{ url_for('static', filename='images/PHONE_BACKGROUND_PRECISION_BAKING.png') }}");
+                background-size: cover;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-logo">
+                <a href="{{ url_for('home') }}">
+                    <img src="{{ url_for('static', filename='images/LOGO.png') }}" alt="Logo">
+                </a>
+            </div>
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('home') }}"><h1>HOME</h1></a></li>
+                <li><a href="{{ url_for('about') }}"><h1>ABOUT</h1></a></li>
+                <li><a href="{{ url_for('contact') }}"><h1>CONTACT</h1></a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left">
+            <div class="carousel-container">
+                <div class="carousel">
+                    <img src="{{ url_for('static', filename='images/1.jpg') }}" alt="Image 1">
+                    <img src="{{ url_for('static', filename='images/2.jpg') }}" alt="Image 2">
+                    <img src="{{ url_for('static', filename='images/3.jpg') }}" alt="Image 3">
+                </div>
+                <button class="prev-button">&lt;</button>
+                <button class="next-button">&gt;</button>
+                <div class="dots"></div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/PRECISION_BAKING.png') }}">
+            </div>
+
+            <form method="POST" action="{{ url_for('Precision_baking') }}">
+                <div>
+                    <textarea class="inputarea" name="Recipe_input" placeholder="Enter the ingredients"></textarea>
+                </div>
+                <div class="button-container">
+                    <button type="submit" class="submit-button">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const carousel = document.querySelector('.carousel');
+        const images = document.querySelectorAll('.carousel img');
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+        const dotsContainer = document.querySelector('.dots');
+
+        let index = 0;
+
+        function updateCarousel() {
+            carousel.style.transform = `translateX(-${index * 100}%)`;
+            updateDots();
+        }
+
+        nextButton.addEventListener('click', () => {
+            index++;
+            if (index >= images.length) {
+                index = 0;
+            }
+            updateCarousel();
+        });
+
+        prevButton.addEventListener('click', () => {
+            index--;
+            if (index < 0) {
+                index = images.length - 1;
+            }
+            updateCarousel();
+        });
+
+        setInterval(() => {
+            index++;
+            if (index >= images.length) {
+                index = 0;
+            }
+            updateCarousel();
+        }, 3000);
+
+        images.forEach((_, i) => {
+            const dot = document.createElement('span');
+            dot.addEventListener('click', () => {
+                index = i;
+                updateCarousel();
+            });
+            dotsContainer.appendChild(dot);
+        });
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.dots span');
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        updateDots();
+
+        function initializeDots() {
+            const dots = document.querySelectorAll('.dots span');
+            if (dots.length > 0) {
+                dots[0].classList.add("active");
+            }
+        }
+        initializeDots();
+    </script>
+</body>
+</html>
