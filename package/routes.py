@@ -1,24 +1,17 @@
 import os
 import json
-import mysql.connector
-import re
-from flask import render_template, url_for, flash, redirect, request,session,jsonify
+from json import JSONEncoder
+import pymysql
+from flask import render_template, url_for, flash, redirect, request, session, jsonify
 import google.generativeai as genai
 import markdown
+import re
 from . import app
 from .recipeforms import InputForm
 from .appkey import apikey  # Import API key
 
-connection = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="ingredientbd"
-)
-cursor = connection.cursor()
 
-
-
+# Basic routes
 @app.route("/", methods=["GET", "POST"])
 def home():
     return render_template('homepage.html')
@@ -31,75 +24,66 @@ def about():
 def contact():
     return render_template('contact.html')
 
-
-
-
-
+def get_db_connection():
+    conn = pymysql.connect(
+        host="localhost",
+        user="user",
+        password="",
+        database="ingredientbd",
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor  # Optional: returns rows as dicts
+    )
+    return conn
 
 @app.route("/Precision_baking", methods=["GET", "POST"])
 def Precision_baking():
     if request.method == "POST":
         Recipe_data = request.form.get("Recipe_input")
-        
+        print(f"Received input: {Recipe_data}")
         if not Recipe_data:
             flash("⚠️ No input provided!", "warning")
-            return redirect(url_for("Precision_baking"))  # Reload page if empty
-
-        # Correctly pass Recipe_data using a query string
+            return redirect(url_for("Precision_baking"))
         return redirect(url_for("ingredientlist", recipe_data=Recipe_data))
-
     return render_template('input_page_precision_baking.html')
 
-@app.route("/ingredients" , methods=['GET'])
+@app.route("/ingredients", methods=['GET'])
 def ingredientlist():
     Recipe_data_processing = request.args.get('recipe_data', None)
-    print(Recipe_data_processing)
-    
-    genai.configure(api_key=apikey)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    print(f"Recipe data: {Recipe_data_processing}")
     
     if not Recipe_data_processing:
+        print("No recipe data, redirecting...")
         flash("⚠️ No recipe data provided!", "warning")
         return redirect(url_for("Precision_baking"))
 
+    genai.configure(api_key=apikey)
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
     def question_answer(context, prompt):
-        result = model.generate_content(f"{context}\n{prompt}")
-        output = result.text
-        if "{" in output and "}" in output:
-            dictionary = eval(output[output.find("{"):output.find("}")+1])
-            return dictionary
-    
+        try:
+            result = model.generate_content(f"{context}\n{prompt}")
+            output = result.text.strip()
+            print(f"Gemini raw output: {output}")
+            if "{" in output and "}" in output:
+                dictionary = eval(output[output.find("{"):output.find("}")+1])
+                return dictionary
+            return output
+        except Exception as e:
+            print(f"Gemini API error: {e}")
+            return None
 
     context_list = """I want you to give me a Python dictionary of ingredients from the recipe 
     with the format {ingredient1: [quantity, unit of measurement], ingredient2: [quantity, unit of measurement], ingredient3: [quantity, unit of measurement]}. 
-    unit of measurement are like tsp,ozz also convert any value in fraction in float value such as this 2 ⅔ in 2.666667 and keep it till 2 decimal places and
-    also if some values are like teaspoons,tablespoons make it in the abbreviation such as tsp,tbsp andReply with a python dictionary only and if any item is without 
-    unit of measurement such as large egg or slices or anything without unit of measurement dont add it in the list.
-    """
-    
-    def extract_no_unit_ingredients(ingredient_list):
-        # Define standard units of measurement to exclude
-        units = r'\b(?:tsp|teaspoons?|tbsp|tablespoons?|fl\s?oz|fluid ounces?|' \
-                r'cups?|pt|pint|qt|quart|gal|gallon|' \
-                r'mL|milliliters?|L|liters?|grams?|g|kilograms?|kg|milligrams?|mg|' \
-                r'oz|ounces?|lb|pounds?|cl|centiliters?|dl|deciliters?)\b'
+    Units of measurement are like tsp, oz; convert fractions like 2 ⅔ to 2.67 (2 decimal places); 
+    abbreviate teaspoons to tsp, tablespoons to tbsp; exclude items without units (e.g., large egg, slices). 
+    Reply with a Python dictionary only."""
 
-        # Split input into lines and clean up spaces
+    def extract_no_unit_ingredients(ingredient_list):
+        units = r'\b(?:tsp|teaspoons?|tbsp|tablespoons?|fl\s?oz|fluid ounces?|cups?|pt|pint|qt|quart|gal|gallon|mL|milliliters?|L|liters?|grams?|g|kilograms?|kg|milligrams?|mg|oz|ounces?|lb|pounds?|cl|centiliters?|dl|deciliters?)\b'
         ingredients = [item.strip() for item in ingredient_list.split("\n") if item.strip()]
-        
-        # Filter out ingredients that contain a standard unit
         no_unit_ingredients = [item for item in ingredients if not re.search(units, item, re.IGNORECASE)]
-        
         return no_unit_ingredients
 
-
-    result_list = question_answer(context_list, Recipe_data_processing)
-    print(result_list)
-    
-    result_no_unit=extract_no_unit_ingredients(Recipe_data_processing)
-    print(result_no_unit)
-    
     units_of_measurement = {
         "tsp": 4.93, "teaspoon": 4.93, "teaspoons": 4.93,  
         "tbsp": 14.79, "tablespoon": 14.79, "tablespoons": 14.79,  
@@ -119,54 +103,85 @@ def ingredientlist():
         "lb": 453.59, "pound": 453.59, "pounds": 453.59,  
     }
 
-    def find_density(ingredient):
-        sql_statement = f"SELECT density FROM ind WHERE ingredient = '{ingredient}' LIMIT 1;"
-        cursor.execute(sql_statement)
-        density = cursor.fetchone()
-        if density:
-            return density[0]
-        else:
-            context2 = "Tell me the average density in float format in python nothing else and only give me the number part"
+    def find_density(ingredient, cursor, conn):
+        try:
+            sql_statement = "SELECT density FROM ind WHERE ingredient = %s LIMIT 1;"
+            cursor.execute(sql_statement, (ingredient,))
+            density = cursor.fetchone()
+            if density:
+                return float(density['density'])  # Use dict key since cursorclass=DictCursor
+
+            context2 = f"Provide the average density of {ingredient} as a float number only (e.g., 0.5), no text or explanation."
             result2 = question_answer(context2, ingredient)
-            density_value = float(result2)
-            cursor.execute(f"INSERT INTO ind (ingredient, density) VALUES ('{ingredient}', {density_value});")
-            connection.commit()
+            try:
+                density_value = float(result2)
+            except (ValueError, TypeError):
+                context2_retry = f"Return only the average density of {ingredient} as a plain float number (e.g., 0.5), no words, no explanation."
+                result2 = question_answer(context2_retry, ingredient)
+                density_value = float(result2) if result2 else 1.0
+            cursor.execute("INSERT INTO ind (ingredient, density) VALUES (%s, %s);", (ingredient, density_value))
+            conn.commit()
             return density_value
+        except Exception as e:
+            print(f"Error in find_density for {ingredient}: {e}")
+            return 1.0
 
-    output_list = []
-    output_list = []
-    for ingredient, (quantity, unit) in result_list.items():
-        density = find_density(ingredient)
-        volume = units_of_measurement.get(unit, 1)
-        grams = round(density * volume * quantity, 2)
-        print(str(ingredient),": "," density : ",density," volume : ",volume," quantity : ",quantity)
-        output_list.append(f"{ingredient}: {grams} grams")
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    for ingredient_no_unit in result_no_unit:
-        output_list.append(ingredient_no_unit)
-    
-    return render_template('output_page_precision_baking.html', ingredient_output=output_list)
+        result_list = question_answer(context_list, Recipe_data_processing)
+        print(f"Parsed ingredients: {result_list}")
+        if not isinstance(result_list, dict):
+            print("Gemini didn’t return a dict, falling back...")
+            flash("⚠️ Failed to parse recipe ingredients! Check input format.", "error")
+            return redirect(url_for("Precision_baking"))
 
+        result_no_unit = extract_no_unit_ingredients(Recipe_data_processing)
+        print(f"No-unit ingredients: {result_no_unit}")
 
+        output_list = []
+        for ingredient, (quantity, unit) in result_list.items():
+            try:
+                density = find_density(ingredient, cursor, conn)
+                volume = units_of_measurement.get(unit.lower(), 1)
+                grams = round(density * volume * float(quantity), 2)
+                output_list.append(f"{ingredient}: {grams} grams")
+                print(f"{ingredient}: density={density}, volume={volume}, quantity={quantity}")
+            except (ValueError, TypeError) as e:
+                print(f"Error processing {ingredient}: {e}")
+                output_list.append(f"{ingredient}: Unable to calculate weight")
 
+        output_list.extend(result_no_unit)
 
+        conn.close()
+        return render_template('output_page_precision_baking.html', ingredient_output=output_list)
 
+    except Exception as e:
+        print(f"Error in ingredientlist: {e}")
+        if 'conn' in locals():
+            conn.close()
+        flash("⚠️ An error occurred while processing the recipe!", "error")
+        return redirect(url_for("Precision_baking"))
 
+    except Exception as e:
+        print(f"Error in ingredientlist: {e}")
+        if 'conn' in locals():
+            conn.close()
+        flash("⚠️ An error occurred while processing the recipe!", "error")
+        return redirect(url_for("Precision_baking"))
 
+# Recipe Master routes
 @app.route("/recipe_master", methods=['GET', 'POST'])
 def recipe_master():
     if request.method == "POST":
         ingredients_list = request.form.get('ingredients_input', None)
-
         if not ingredients_list:
             flash("Please enter at least one ingredient.", "warning")
-            return redirect(url_for('recipe_master'))  # Redirect back to input page
-        else:
-            print(f"✅ Redirecting with ingredients: {ingredients_list}")  # Debugging log
-            return redirect(url_for('ind_to_recipe', ingredients_list=ingredients_list))
-
+            return redirect(url_for('recipe_master'))
+        print(f"✅ Redirecting with ingredients: {ingredients_list}")
+        return redirect(url_for('ind_to_recipe', ingredients_list=ingredients_list))
     return render_template('input_page_recipe_master.html')
-    
 
 @app.route("/ind_to_recipe", methods=['GET'])
 def ind_to_recipe():
@@ -178,26 +193,19 @@ def ind_to_recipe():
     
     if not ingredients_list:
         flash("No ingredients provided. Please enter ingredients.", "warning")
-        return redirect(url_for('ind_to_recipe'))
+        return redirect(url_for('recipe_master'))  # Fixed redirect to recipe_master
 
-    # Store ingredients in session for regeneration
     session['ingredients_list'] = ingredients_list
 
     def question_answer(context, prompt):
         try:
             response = model.generate_content(f"{context}\n{prompt}")
-
-            # Extracting text from the response
             text_response = response.text if hasattr(response, "text") else response.candidates[0].content
-
-            # Remove code block formatting (if present)
             cleaned_response = re.sub(r"```json\s*|\s*```", "", text_response).strip()
             return cleaned_response
-
         except Exception as e:
             return f"Error: {e}"
 
-    # AI Prompt to return only one recipe
     context = """Provide **only one** recipe from the given ingredients.
     Reply strictly in a **valid JSON format**, containing:
     - 'name': recipe title
@@ -208,24 +216,19 @@ def ind_to_recipe():
 
     prompt = f"Given these ingredients: {ingredients_list}, {context}"
     result = question_answer(context, prompt)
-    print(f"🔍 Raw AI Response: {result}")  # Debugging log
+    print(f"🔍 Raw AI Response: {result}")
 
     try:
         recipe_output = json.loads(result)
-        
-        # ✅ **Fix step splitting here**
         description = recipe_output.get("description", "")
-        steps = re.split(r'\d+\.\s', description)[1:]  # Splits correctly at numbered steps
-
+        steps = re.split(r'\d+\.\s', description)[1:]
         formatted_steps = [f"Step {i + 1}: {step.strip()}" for i, step in enumerate(steps)]
-        recipe_output["description"] = formatted_steps  # Now it's a **list of steps** instead of a single string
-
+        recipe_output["description"] = formatted_steps
     except json.JSONDecodeError:
-        print(f"❌ JSON Decoding Failed: {result}")  # Debugging log
+        print(f"❌ JSON Decoding Failed: {result}")
         recipe_output = {"name": "Error", "description": ["Invalid AI response format"]}
 
     print(f"✅ Recipe Output: {recipe_output}")
-
     return render_template("output_page_recipe_master.html", recipe_output=recipe_output)
 
 @app.route("/regenerate_recipe")
@@ -234,62 +237,54 @@ def regenerate_recipe():
     if not ingredients_list:
         flash("No ingredients found. Please enter ingredients again.", "warning")
         return redirect(url_for('recipe_master'))
-
     return redirect(url_for('ind_to_recipe', ingredients_list=ingredients_list))
 
-
-
-
-
-
+# Treat Tech routes
 @app.route("/treat_tech", methods=['GET', 'POST'])
 def treat_tech():
     if request.method == "POST":
         dish_name = request.form.get('dish_name_input', None)
-
         if not dish_name:
-            flash("Please enter at least one ingredient.", "warning")
-            return redirect(url_for('dish_name'))  # Redirect back to input page
-        else:
-            print(f"✅ Redirecting with ingredients: {dish_name}")  # Debugging log
-            return redirect(url_for('regenerate_recipe_v2', dish_name=dish_name))
-
+            flash("Please enter a dish name.", "warning")
+            return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+        print(f"✅ Redirecting with dish: {dish_name}")
+        return redirect(url_for('regenerate_recipe_v2', dish_name=dish_name))
     return render_template('input_page_treat_tech.html')
 
 @app.route("/regenerate_recipe_v2", methods=['GET'], endpoint="regenerate_recipe_v2")
 def regenerate_recipe_v2():
     dish_name = request.args.get('dish_name', '').strip()
-    print(f"Received dish_name: '{dish_name}'")  # Debug
+    print(f"Received dish_name: '{dish_name}'")
 
     if not dish_name:
         flash("Invalid dish name. Please enter a valid one.", "warning")
-        print("Redirecting: Empty dish_name")  # Debug
-        return redirect(url_for('home'))
+        print("Redirecting: Empty dish_name")
+        return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
 
     genai.configure(api_key=apikey)
     model = genai.GenerativeModel("gemini-2.0-flash")
 
     prompt = f"Provide a structured recipe for {dish_name}. Include:\n1. Ingredients\n2. Steps\n3. Cooking time\n4. Servings."
-    print(f"Prompt sent to AI: {prompt}")  # Debug
+    print(f"Prompt sent to AI: {prompt}")
 
     try:
         response = model.generate_content(prompt)
-        print(f"Raw response: {response}")  # Debug
-        print(f"Response text: '{response.text if response else None}'")  # Debug
-        
+        print(f"Raw response: {response}")
         if not response or not response.text.strip():
             flash("No valid recipe found. Try another dish!", "danger")
-            print("Redirecting: No valid response")  # Debug
-            return redirect(url_for('home'))
+            print("Redirecting: No valid response")
+            return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
 
         recipe_description = markdown.markdown(response.text.strip())
-        print("Rendering recipe page")  # Debug
-
+        print("Rendering recipe page")
         return render_template("output_page_treat_tech.html", 
                                dish_name=dish_name, 
                                recipe_output={"name": dish_name, "description": recipe_description})
-
     except Exception as e:
         flash(f"Error generating recipe: {str(e)}", "danger")
-        print(f"Redirecting: Exception occurred - {str(e)}")  # Debug
-        return redirect(url_for('home'))
+        print(f"Redirecting: Exception occurred - {str(e)}")
+        return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+
+# Debug routes on startup
+print("Registered routes:")
+print(app.url_map)
