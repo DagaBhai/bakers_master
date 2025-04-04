@@ -1,2 +1,2 @@
-app_config= '6157ea429d974b2766f17ad4f85c98bf'
-apikey="AIzaSyD-khfPGUiyGOytU0xAcf9IlmzrI7BtH0Q"
+app_config= '*****a429d974b2766f17*****c98bf'
+apikey="****SyD-k*****iyGOytU0xAcf9*****I7BtH0Q"
