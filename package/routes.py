@@ -72,17 +72,14 @@ def ingredientlist():
             print(f"Gemini API error: {e}")
             return None
 
+    # Updated context to handle all vague measurements dynamically
     context_list = """I want you to give me a Python dictionary of ingredients from the recipe 
     with the format {ingredient1: [quantity, unit of measurement], ingredient2: [quantity, unit of measurement], ingredient3: [quantity, unit of measurement]}. 
     Units of measurement are like tsp, oz; convert fractions like 2 ⅔ to 2.67 (2 decimal places); 
-    abbreviate teaspoons to tsp, tablespoons to tbsp; exclude items without units (e.g., large egg, slices). 
+    abbreviate teaspoons to tsp, tablespoons to tbsp; for any vague or non-standard measurements 
+    (e.g., 'slice', 'large egg', 'pinch', 'dash', 'handful', etc.), use 'vague' as the unit and 
+    estimate a reasonable quantity if not specified (e.g., 1 for 'large egg', 0.1 for 'pinch'). 
     Reply with a Python dictionary only."""
-
-    def extract_no_unit_ingredients(ingredient_list):
-        units = r'\b(?:tsp|teaspoons?|tbsp|tablespoons?|fl\s?oz|fluid ounces?|cups?|pt|pint|qt|quart|gal|gallon|mL|milliliters?|L|liters?|grams?|g|kilograms?|kg|milligrams?|mg|oz|ounces?|lb|pounds?|cl|centiliters?|dl|deciliters?)\b'
-        ingredients = [item.strip() for item in ingredient_list.split("\n") if item.strip()]
-        no_unit_ingredients = [item for item in ingredients if not re.search(units, item, re.IGNORECASE)]
-        return no_unit_ingredients
 
     units_of_measurement = {
         "tsp": 4.93, "teaspoon": 4.93, "teaspoons": 4.93,  
@@ -109,7 +106,7 @@ def ingredientlist():
             cursor.execute(sql_statement, (ingredient,))
             density = cursor.fetchone()
             if density:
-                return float(density['density'])  # Use dict key since cursorclass=DictCursor
+                return float(density['density'])
 
             context2 = f"Provide the average density of {ingredient} as a float number only (e.g., 0.5), no text or explanation."
             result2 = question_answer(context2, ingredient)
@@ -126,9 +123,43 @@ def ingredientlist():
             print(f"Error in find_density for {ingredient}: {e}")
             return 1.0
 
+    def find_vague_weight(ingredient, quantity, cursor, conn):
+        try:
+            # Check if we have a stored weight for this vague ingredient
+            sql_statement = "SELECT weight FROM vague_ind WHERE ingredient = %s LIMIT 1;"
+            cursor.execute(sql_statement, (ingredient,))
+            weight = cursor.fetchone()
+            if weight:
+                return float(weight['weight']) * float(quantity)
+
+            # Query AI for approximate weight in grams
+            context3 = f"Provide the average weight in grams of '{ingredient}' as a float number only (e.g., 50.0), no text or explanation."
+            result3 = question_answer(context3, ingredient)
+            try:
+                weight_value = float(result3)
+            except (ValueError, TypeError):
+                context3_retry = f"Return only the average weight in grams of '{ingredient}' as a plain float number (e.g., 50.0), no words, no explanation."
+                result3 = question_answer(context3_retry, ingredient)
+                weight_value = float(result3) if result3 else 10.0  # Default to 10g if no valid response
+            cursor.execute("INSERT INTO vague_ind (ingredient, weight) VALUES (%s, %s);", (ingredient, weight_value))
+            conn.commit()
+            return weight_value * float(quantity)
+        except Exception as e:
+            print(f"Error in find_vague_weight for {ingredient}: {e}")
+            return 10.0 * float(quantity)  # Fallback default
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # Ensure the vague_ind table exists (you'll need to create this in your DB)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vague_ind (
+                ingredient VARCHAR(255) PRIMARY KEY,
+                weight FLOAT
+            );
+        """)
+        conn.commit()
 
         result_list = question_answer(context_list, Recipe_data_processing)
         print(f"Parsed ingredients: {result_list}")
@@ -137,22 +168,24 @@ def ingredientlist():
             flash("⚠️ Failed to parse recipe ingredients! Check input format.", "error")
             return redirect(url_for("Precision_baking"))
 
-        result_no_unit = extract_no_unit_ingredients(Recipe_data_processing)
-        print(f"No-unit ingredients: {result_no_unit}")
-
         output_list = []
         for ingredient, (quantity, unit) in result_list.items():
             try:
-                density = find_density(ingredient, cursor, conn)
-                volume = units_of_measurement.get(unit.lower(), 1)
-                grams = round(density * volume * float(quantity), 2)
-                output_list.append(f"{ingredient}: {grams} grams")
-                print(f"{ingredient}: density={density}, volume={volume}, quantity={quantity}")
+                if unit.lower() == "vague":
+                    # Handle vague measurements dynamically
+                    grams = round(find_vague_weight(ingredient, quantity, cursor, conn), 2)
+                    output_list.append(f"{ingredient}: {grams} grams")
+                    print(f"{ingredient}: vague, quantity={quantity}, grams={grams}")
+                else:
+                    # Handle precise measurements
+                    density = find_density(ingredient, cursor, conn)
+                    volume = units_of_measurement.get(unit.lower(), 1)
+                    grams = round(density * volume * float(quantity), 2)
+                    output_list.append(f"{ingredient}: {grams} grams")
+                    print(f"{ingredient}: density={density}, volume={volume}, quantity={quantity}")
             except (ValueError, TypeError) as e:
                 print(f"Error processing {ingredient}: {e}")
                 output_list.append(f"{ingredient}: Unable to calculate weight")
-
-        output_list.extend(result_no_unit)
 
         conn.close()
         return render_template('output_page_precision_baking.html', ingredient_output=output_list)
@@ -164,12 +197,6 @@ def ingredientlist():
         flash("⚠️ An error occurred while processing the recipe!", "error")
         return redirect(url_for("Precision_baking"))
 
-    except Exception as e:
-        print(f"Error in ingredientlist: {e}")
-        if 'conn' in locals():
-            conn.close()
-        flash("⚠️ An error occurred while processing the recipe!", "error")
-        return redirect(url_for("Precision_baking"))
 
 # Recipe Master routes
 @app.route("/recipe_master", methods=['GET', 'POST'])
@@ -264,7 +291,7 @@ def regenerate_recipe_v2():
     genai.configure(api_key=apikey)
     model = genai.GenerativeModel("gemini-2.0-flash")
 
-    prompt = f"Provide a structured recipe for {dish_name}. Include:\n1. Ingredients\n2. Steps\n3. Cooking time\n4. Servings."
+    prompt = f"Provide a structured recipe for {dish_name}. Include:\n1. Ingredients\n2. Steps\n3. Cooking time\n4. Servings. TRY TO GIVE ingredients in grams"
     print(f"Prompt sent to AI: {prompt}")
 
     try:
