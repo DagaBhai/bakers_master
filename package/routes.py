@@ -1,7 +1,7 @@
 import os
 import json
 from json import JSONEncoder
-import pymysql
+import sqlite3  # Replaced pymysql with sqlite3
 from flask import render_template, url_for, flash, redirect, request, session, jsonify
 import google.generativeai as genai
 import markdown
@@ -9,7 +9,6 @@ import re
 from . import app
 from .recipeforms import InputForm
 from .appkey import apikey  # Import API key
-
 
 # Basic routes
 @app.route("/", methods=["GET", "POST"])
@@ -25,14 +24,8 @@ def contact():
     return render_template('contact.html')
 
 def get_db_connection():
-    conn = pymysql.connect(
-        host="localhost",
-        user="user",
-        password="",
-        database="ingredientbd",
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor  # Optional: returns rows as dicts
-    )
+    conn = sqlite3.connect('ingredientbd.db')
+    conn.row_factory = sqlite3.Row  
     return conn
 
 @app.route("/Precision_baking", methods=["GET", "POST"])
@@ -102,7 +95,7 @@ def ingredientlist():
 
     def find_density(ingredient, cursor, conn):
         try:
-            sql_statement = "SELECT density FROM ind WHERE ingredient = %s LIMIT 1;"
+            sql_statement = "SELECT density FROM ind WHERE ingredient = ? LIMIT 1"
             cursor.execute(sql_statement, (ingredient,))
             density = cursor.fetchone()
             if density:
@@ -116,7 +109,7 @@ def ingredientlist():
                 context2_retry = f"Return only the average density of {ingredient} as a plain float number (e.g., 0.5), no words, no explanation."
                 result2 = question_answer(context2_retry, ingredient)
                 density_value = float(result2) if result2 else 1.0
-            cursor.execute("INSERT INTO ind (ingredient, density) VALUES (%s, %s);", (ingredient, density_value))
+            cursor.execute("INSERT OR IGNORE INTO ind (ingredient, density) VALUES (?, ?)", (ingredient, density_value))
             conn.commit()
             return density_value
         except Exception as e:
@@ -125,14 +118,12 @@ def ingredientlist():
 
     def find_vague_weight(ingredient, quantity, cursor, conn):
         try:
-            # Check if we have a stored weight for this vague ingredient
-            sql_statement = "SELECT weight FROM vague_ind WHERE ingredient = %s LIMIT 1;"
+            sql_statement = "SELECT weight FROM vague_ind WHERE ingredient = ? LIMIT 1"
             cursor.execute(sql_statement, (ingredient,))
             weight = cursor.fetchone()
             if weight:
                 return float(weight['weight']) * float(quantity)
 
-            # Query AI for approximate weight in grams
             context3 = f"Provide the average weight in grams of '{ingredient}' as a float number only (e.g., 50.0), no text or explanation."
             result3 = question_answer(context3, ingredient)
             try:
@@ -141,7 +132,7 @@ def ingredientlist():
                 context3_retry = f"Return only the average weight in grams of '{ingredient}' as a plain float number (e.g., 50.0), no words, no explanation."
                 result3 = question_answer(context3_retry, ingredient)
                 weight_value = float(result3) if result3 else 10.0  # Default to 10g if no valid response
-            cursor.execute("INSERT INTO vague_ind (ingredient, weight) VALUES (%s, %s);", (ingredient, weight_value))
+            cursor.execute("INSERT OR IGNORE INTO vague_ind (ingredient, weight) VALUES (?, ?)", (ingredient, weight_value))
             conn.commit()
             return weight_value * float(quantity)
         except Exception as e:
@@ -152,12 +143,18 @@ def ingredientlist():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Ensure the vague_ind table exists (you'll need to create this in your DB)
+        # Create tables if they don't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ind (
+                ingredient TEXT PRIMARY KEY,
+                density REAL
+            )
+        """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vague_ind (
-                ingredient VARCHAR(255) PRIMARY KEY,
-                weight FLOAT
-            );
+                ingredient TEXT PRIMARY KEY,
+                weight REAL
+            )
         """)
         conn.commit()
 
@@ -172,12 +169,10 @@ def ingredientlist():
         for ingredient, (quantity, unit) in result_list.items():
             try:
                 if unit.lower() == "vague":
-                    # Handle vague measurements dynamically
                     grams = round(find_vague_weight(ingredient, quantity, cursor, conn), 2)
                     output_list.append(f"{ingredient}: {grams} grams")
                     print(f"{ingredient}: vague, quantity={quantity}, grams={grams}")
                 else:
-                    # Handle precise measurements
                     density = find_density(ingredient, cursor, conn)
                     volume = units_of_measurement.get(unit.lower(), 1)
                     grams = round(density * volume * float(quantity), 2)
@@ -197,8 +192,7 @@ def ingredientlist():
         flash("⚠️ An error occurred while processing the recipe!", "error")
         return redirect(url_for("Precision_baking"))
 
-
-# Recipe Master routes
+# Recipe Master routes (unchanged)
 @app.route("/recipe_master", methods=['GET', 'POST'])
 def recipe_master():
     if request.method == "POST":
@@ -220,7 +214,7 @@ def ind_to_recipe():
     
     if not ingredients_list:
         flash("No ingredients provided. Please enter ingredients.", "warning")
-        return redirect(url_for('recipe_master'))  # Fixed redirect to recipe_master
+        return redirect(url_for('recipe_master'))
 
     session['ingredients_list'] = ingredients_list
 
@@ -266,14 +260,14 @@ def regenerate_recipe():
         return redirect(url_for('recipe_master'))
     return redirect(url_for('ind_to_recipe', ingredients_list=ingredients_list))
 
-# Treat Tech routes
+# Treat Tech routes (unchanged)
 @app.route("/treat_tech", methods=['GET', 'POST'])
 def treat_tech():
     if request.method == "POST":
         dish_name = request.form.get('dish_name_input', None)
         if not dish_name:
             flash("Please enter a dish name.", "warning")
-            return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+            return redirect(url_for('treat_tech'))
         print(f"✅ Redirecting with dish: {dish_name}")
         return redirect(url_for('regenerate_recipe_v2', dish_name=dish_name))
     return render_template('input_page_treat_tech.html')
@@ -286,7 +280,7 @@ def regenerate_recipe_v2():
     if not dish_name:
         flash("Invalid dish name. Please enter a valid one.", "warning")
         print("Redirecting: Empty dish_name")
-        return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+        return redirect(url_for('treat_tech'))
 
     genai.configure(api_key=apikey)
     model = genai.GenerativeModel("gemini-2.0-flash")
@@ -300,7 +294,7 @@ def regenerate_recipe_v2():
         if not response or not response.text.strip():
             flash("No valid recipe found. Try another dish!", "danger")
             print("Redirecting: No valid response")
-            return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+            return redirect(url_for('treat_tech'))
 
         recipe_description = markdown.markdown(response.text.strip())
         print("Rendering recipe page")
@@ -310,7 +304,7 @@ def regenerate_recipe_v2():
     except Exception as e:
         flash(f"Error generating recipe: {str(e)}", "danger")
         print(f"Redirecting: Exception occurred - {str(e)}")
-        return redirect(url_for('treat_tech'))  # Fixed redirect to treat_tech
+        return redirect(url_for('treat_tech'))
 
 # Debug routes on startup
 print("Registered routes:")
